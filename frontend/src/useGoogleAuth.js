@@ -24,6 +24,22 @@ export const useGoogleAuth = () => {
         communityCollege: ''
       });
 
+      // Check Firestore for user document
+      const userDocRef = doc(db, 'userInformation', loggedInUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        // Document exists, update the name field
+        await setDoc(userDocRef, { name: loggedInUser.displayName || '' }, { merge: true });
+      } else {
+        // Document does not exist, create new document with user data
+        await setDoc(userDocRef, {
+          uid: loggedInUser.uid,
+          name: loggedInUser.displayName || '',
+          email: loggedInUser.email || '',
+        });
+      }
+
       setIsAuthenticated(true);
       setShowSignUp(true);
       console.log("User signed in:", loggedInUser);
