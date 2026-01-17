@@ -37,7 +37,7 @@ const UC_CAMPUSES = [
   { id: "ucsc", name: "UC Santa Cruz", available: true, mascot: "🍌" },
   { id: "ucb", name: "UC Berkeley", available: false },
   { id: "ucla", name: "UCLA", available: false },
-  { id: "ucsd", name: "UC San Diego", available: false },
+  { id: "ucsd", name: "UC San Diego", available: true },
   { id: "ucd", name: "UC Davis", available: false },
   { id: "uci", name: "UC Irvine", available: false },
   { id: "ucr", name: "UC Riverside", available: false },
@@ -122,6 +122,13 @@ function App() {
           // If both fields exist, skip profile form
           if ((data.major || user.major) && (data.communityCollege || user.communityCollege)) {
             setCurrentStep(1);
+          }
+          // If targetUC exists on user or in data, set selectedUC and jump step
+          const targetUC = (user.targetUC || data.targetUC);
+          if (targetUC) {
+            setSelectedUC(targetUC);
+            setUser(prev => ({ ...prev, targetUC }));
+            setCurrentStep(2);
           }
         }
       } catch (err) {
@@ -485,10 +492,11 @@ function App() {
                 setUser(prev => ({ ...prev, major: e.target.value }));
                 if (user.uid) updateUserFirestoreField(user.uid, { major: e.target.value });
               }}
-              className="input-field"
+              
+              className="w-full bg-white/5 border border-white/20 rounded-xl text-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ucsc-gold hover:bg-white/10 transition-colors"
               required
             >
-              <option value="">Select a major</option>
+              <option value="" disabled>Select a major</option>
               {MOCK_MAJORS.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
@@ -500,10 +508,10 @@ function App() {
                 setUser(prev => ({ ...prev, communityCollege: e.target.value }));
                 if (user.uid) updateUserFirestoreField(user.uid, { communityCollege: e.target.value });
               }}
-              className="input-field"
+              className="w-full bg-white/5 border border-white/20 rounded-xl text-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ucsc-gold hover:bg-white/10 transition-colors"
               required
             >
-              <option value="">Select your college</option>
+              <option value="" disabled>Select your college</option>
               {MOCK_COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
@@ -513,13 +521,41 @@ function App() {
     </div>
   );
 
+  // Move Firestore update to Continue button
+  const handleUCContinue = async () => {
+    if (selectedUC && user.uid) {
+      // Save immediately to Firestore and update state
+      await updateUserFirestoreField(user.uid, { targetUC: selectedUC });
+      setUser(prev => ({ ...prev, targetUC: selectedUC }));
+    }
+    // Immediately jump to transcript step
+    setCurrentStep(2);
+  };
+
+  const handleUCSelect = async (ucId) => {
+  setSelectedUC(ucId);
+  if (user.uid) {
+    await updateUserFirestoreField(user.uid, { targetUC: ucId });
+    setUser(prev => ({ ...prev, targetUC: ucId }));
+  }
+  setCurrentStep(2); // jump to transcript step
+};
+
   const renderUCSelection = () => (
     <div className="animate-fade-in">
       <div className="mb-8"><h2 className="font-display text-3xl font-bold text-white mb-2">Choose Your Target UC</h2><p className="text-white/60">Select the UC campus you want to transfer to. (Demo: Only UCSC available)</p></div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {UC_CAMPUSES.map((uc) => (
           <label key={uc.id} className={`relative cursor-pointer ${!uc.available && 'opacity-50 cursor-not-allowed'}`}>
-            <input type="radio" name="uc-selection" value={uc.id} checked={selectedUC === uc.id} onChange={() => uc.available && setSelectedUC(uc.id)} disabled={!uc.available} className="sr-only" />
+            <input
+              type="radio"
+              name="uc-selection"
+              value={uc.id}
+              checked={selectedUC === uc.id}
+              onChange={() => uc.available && handleUCSelect(uc.id)}
+              disabled={!uc.available}
+              className="sr-only"
+/>
             <div className={`p-5 rounded-xl border-2 transition-all duration-200 ${selectedUC === uc.id ? 'border-ucsc-gold bg-ucsc-gold/10 shadow-lg shadow-yellow-500/20' : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10'} ${!uc.available && 'pointer-events-none'}`}>
               <div className="flex items-center gap-3">
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedUC === uc.id ? 'border-ucsc-gold bg-ucsc-gold' : 'border-white/40'}`}>{selectedUC === uc.id && <div className="w-2 h-2 rounded-full bg-ucsc-blue" />}</div>
@@ -538,7 +574,7 @@ function App() {
           Back
         </button>
         <button
-          onClick={confirmUCSelection}
+          onClick={handleUCContinue}
           disabled={!selectedUC}
           className={`btn-primary ${!selectedUC && 'opacity-50 cursor-not-allowed'}`}
         >
