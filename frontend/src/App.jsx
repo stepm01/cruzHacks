@@ -3,6 +3,7 @@ import {
   GraduationCap, Upload, CheckCircle2, Circle, User, Mail, Building2, BookOpen,
   ArrowRight, AlertTriangle, ExternalLink, Plus, Trash2, Loader2, CheckCircle,
   XCircle, AlertCircle, Sparkles, ChevronRight, School, Menu, X, Info, HelpCircle, Users,
+  LogOut,
 } from 'lucide-react';
 
 const MOCK_COLLEGES = [
@@ -187,6 +188,31 @@ function App() {
               <Info className="w-4 h-4" />
               <span className="font-medium">Resources</span>
             </button>
+            {/* Sign Out Button */}
+          {isAuthenticated && (
+            <button
+              onClick={async () => {
+                try {
+                  await auth.signOut();
+                  setIsAuthenticated(false);
+                  setUser({});
+                  setCurrentStep(0);
+                  setSelectedUC(null);
+                  setCourses([]);
+                  setVerificationResults(null);
+                  setCurrentPage('home');
+                  setShowSignUp(false);
+                } catch (err) {
+                  console.error("Sign out failed:", err);
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-br from-red-600 to-red-700 text-white font-semibold shadow-md hover:scale-105 hover:bg-red-700/90 hover:from-red-600 hover:to-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+              style={{ willChange: 'transform' }}
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
+            </button>
+          )}
           </div>
 
         </div>
