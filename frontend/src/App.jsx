@@ -14,6 +14,18 @@ import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore
 import { auth } from './firebase';
 const db = getFirestore();
 
+// Firestore update function for user fields (safe update or create)
+const updateUserFirestoreField = async (uid, fields) => {
+  if (!uid) return;
+  try {
+    // Write to correct collection: userInformation, using uid and merge
+    const userRef = doc(db, "userInformation", uid);
+    await setDoc(userRef, fields, { merge: true });
+  } catch (err) {
+    console.error("Failed to update Firestore user:", err);
+  }
+};
+
 
 
 
@@ -88,6 +100,36 @@ function App() {
   const [newCourse, setNewCourse] = useState({ courseCode: '', courseName: '', units: 3, grade: 'A', semester: 'Fall 2024' });
   const { user, isAuthenticated, showSignUp, handleGoogleSignIn, setUser, setShowSignUp, setIsAuthenticated} = useGoogleAuth();
   const [currentPage, setCurrentPage] = useState('home');
+
+  // Fetch user data from Firestore on mount and prefill profile fields
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user.uid) return;
+      try {
+        // Read from correct collection: userInformation
+        const userRef = doc(db, "userInformation", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          let updates = {};
+          // Only update if not already set in user
+          if (!user.major && data.major) updates.major = data.major;
+          if (!user.communityCollege && data.communityCollege) updates.communityCollege = data.communityCollege;
+          if (Object.keys(updates).length > 0) {
+            setUser(prev => ({ ...prev, ...updates }));
+          }
+          // If both fields exist, skip profile form
+          if ((data.major || user.major) && (data.communityCollege || user.communityCollege)) {
+            setCurrentStep(1);
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchUserProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.uid]);
 
   const steps = [
     { id: 1, label: "Choose UC", icon: School, completed: selectedUC !== null },
@@ -407,7 +449,7 @@ function App() {
               value={user.major}
               onChange={(e) => {
                 setUser(prev => ({ ...prev, major: e.target.value }));
-                updateUserFirestoreField(user.uid, { major: e.target.value });
+                if (user.uid) updateUserFirestoreField(user.uid, { major: e.target.value });
               }}
               className="input-field"
               required
@@ -422,7 +464,7 @@ function App() {
               value={user.communityCollege}
               onChange={(e) => {
                 setUser(prev => ({ ...prev, communityCollege: e.target.value }));
-                updateUserFirestoreField(user.uid, { communityCollege: e.target.value });
+                if (user.uid) updateUserFirestoreField(user.uid, { communityCollege: e.target.value });
               }}
               className="input-field"
               required
@@ -454,7 +496,21 @@ function App() {
           </label>
         ))}
       </div>
-      <button onClick={confirmUCSelection} disabled={!selectedUC} className={`btn-primary ${!selectedUC && 'opacity-50 cursor-not-allowed'}`}>Continue to Transcript<ArrowRight className="w-5 h-5 inline ml-2" /></button>
+      <div className="flex gap-4">
+        <button
+          onClick={() => setCurrentStep(0)}
+          className="btn-secondary"
+        >
+          Back
+        </button>
+        <button
+          onClick={confirmUCSelection}
+          disabled={!selectedUC}
+          className={`btn-primary ${!selectedUC && 'opacity-50 cursor-not-allowed'}`}
+        >
+          Continue to Transcript<ArrowRight className="w-5 h-5 inline ml-2" />
+        </button>
+      </div>
     </div>
   );
 
@@ -506,9 +562,21 @@ function App() {
         ])} className="text-ucsc-gold text-sm hover:underline">Load sample transcript →</button>
       </div>
 
-      <button onClick={runVerification} disabled={courses.length === 0 || isLoading} className={`btn-primary ${(courses.length === 0 || isLoading) && 'opacity-50 cursor-not-allowed'}`}>
-        {isLoading ? <><Loader2 className="w-5 h-5 inline mr-2 animate-spin" />Verifying...</> : <><Sparkles className="w-5 h-5 inline mr-2" />Verify My Eligibility</>}
-      </button>
+      <div className="flex gap-4">
+        <button
+          onClick={() => setCurrentStep(1)}
+          className="btn-secondary"
+        >
+          Back
+        </button>
+        <button
+          onClick={runVerification}
+          disabled={courses.length === 0 || isLoading}
+          className={`btn-primary ${(courses.length === 0 || isLoading) && 'opacity-50 cursor-not-allowed'}`}
+        >
+          {isLoading ? <><Loader2 className="w-5 h-5 inline mr-2 animate-spin" />Verifying...</> : <><Sparkles className="w-5 h-5 inline mr-2" />Verify My Eligibility</>}
+        </button>
+      </div>
     </div>
   );
 
