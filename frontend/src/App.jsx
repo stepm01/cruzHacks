@@ -171,7 +171,7 @@ function App() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-ucsc-gold to-yellow-400 flex items-center justify-center shadow-lg">
               <GraduationCap className="w-6 h-6 text-ucsc-blue" />
             </div>
-            <span className="font-display font-bold text-white text-lg hidden md:block">UC Transfer Verifier</span>
+            <span className="font-display font-bold text-white text-lg hidden md:block">TransferMap</span>
           </button>
 
           <div className="hidden md:flex items-center gap-6">
@@ -185,7 +185,7 @@ function App() {
             </button>
             <button onClick={() => setCurrentPage('info')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'info' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
               <Info className="w-4 h-4" />
-              <span className="font-medium">Extra Info</span>
+              <span className="font-medium">Resources</span>
             </button>
           </div>
 
@@ -277,7 +277,7 @@ function App() {
 
   const renderExtraInfo = () => (
     <div className="animate-fade-in">
-      <h2 className="font-display text-3xl font-bold text-white mb-6">Extra Information</h2>
+      <h2 className="font-display text-3xl font-bold text-white mb-6">Resources and References</h2>
       <div className="space-y-6">
         <div className="glass rounded-xl p-6">
           <h3 className="text-ucsc-gold text-xl font-semibold mb-4">Important Resources</h3>
