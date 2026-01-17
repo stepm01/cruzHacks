@@ -1,27 +1,34 @@
-// Firebase Configuration
-// Replace these values with your Firebase project credentials
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "your-api-key",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-project.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project-id",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-project.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "your-sender-id",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "your-app-id"
+  apiKey: "AIzaSyCNk-Hghr6fk9Kmr550eD8eLjzJE1-ONjw",
+  authDomain: "cruzhacks-223f4.firebaseapp.com",
+  projectId: "cruzhacks-223f4",
+  storageBucket: "cruzhacks-223f4.firebasestorage.app",
+  messagingSenderId: "823546989521",
+  appId: "1:823546989521:web:6f29f1abfc49ac52cd2ef0",
+  measurementId: "G-5VNQZW1JQC"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize Auth
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
 export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
+const provider = new GoogleAuthProvider();
 
-// Configure Google Provider
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
-
-export default app;
+export const signInWithGoogle = () => {
+  signInWithPopup(auth, provider)
+    .then((result) => {
+      const user = result.user;
+      console.log('User signed in: ', user);
+    })
+    .catch((error) => {
+      console.error('Error during sign in: ', error);
+    });
+}

@@ -9,6 +9,10 @@ const MOCK_COLLEGES = [
   "De Anza College", "Foothill College", "Mission College", "West Valley College",
   "Ohlone College", "San Jose City College", "Evergreen Valley College",
 ];
+import { useGoogleAuth } from './useGoogleAuth';
+
+
+
 
 const MOCK_MAJORS = ["Computer Science", "Biology", "Psychology"];
 
@@ -71,26 +75,20 @@ const generateMockResults = (courses, major) => {
 };
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showSignUp, setShowSignUp] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [user, setUser] = useState({ email: '', name: '', major: '', communityCollege: '' });
   const [selectedUC, setSelectedUC] = useState(null);
   const [courses, setCourses] = useState([]);
   const [verificationResults, setVerificationResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [newCourse, setNewCourse] = useState({ courseCode: '', courseName: '', units: 3, grade: 'A', semester: 'Fall 2024' });
+  const { user, isAuthenticated, showSignUp, handleGoogleSignIn, setUser, setShowSignUp, setIsAuthenticated} = useGoogleAuth();
+
 
   const steps = [
     { id: 1, label: "Choose UC", icon: School, completed: selectedUC !== null },
     { id: 2, label: "Transcript", icon: Upload, completed: courses.length > 0 },
     { id: 3, label: "Results", icon: CheckCircle2, completed: verificationResults !== null },
   ];
-
-  const handleGoogleSignIn = () => {
-    setUser(prev => ({ ...prev, email: 'student@deanza.edu' }));
-    setShowSignUp(true);
-  };
 
   const handleProfileSubmit = (e) => {
     e.preventDefault();
