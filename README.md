@@ -1,6 +1,6 @@
-# UC Transfer Path Verifier 🎓
+# TransferMap - UC Transfer Path Verifier🎓
 
-> A hackathon project for CruzHacks 2025 - Helping California community college students verify their UC transfer eligibility using official sources.
+> A hackathon project for CruzHacks 2026 - Helping California community college students verify their UC transfer eligibility using official sources.
 
 ![UC Transfer Verifier](https://img.shields.io/badge/cruzhacks-2025-FDC700?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18.2-61DAFB?style=flat-square&logo=react)
@@ -156,7 +156,7 @@ cruzhacks-transfer-tool/
 
 ## 👥 Team
 
-Built with ❤️ at CruzHacks 2025
+Built with ❤️ at CruzHacks 2026
 
 ## 📜 Disclaimer
 
