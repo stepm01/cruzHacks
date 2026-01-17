@@ -381,15 +381,23 @@ function App() {
         </div>
       </div>
 
+      
+
       <div className="space-y-3">
         {steps.map((step, idx) => {
           const Icon = step.icon;
           const isActive = currentStep === idx + 1;
           const isCompleted = step.completed;
           const isDisabled = !isAuthenticated || (idx > 0 && !steps[idx - 1].completed);
+          // Allow clicking previous steps freely, but not future steps
+          const canGoToStep = isAuthenticated && (!isDisabled || idx < currentStep - 1);
           return (
-            <button key={step.id} onClick={() => isAuthenticated && !isDisabled && setCurrentStep(idx + 1)} disabled={isDisabled}
-              className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 ${isActive ? 'glass step-active' : 'bg-white/5 hover:bg-white/10'} ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+            <button
+              key={step.id}
+              onClick={() => canGoToStep && setCurrentStep(idx + 1)}
+              disabled={!canGoToStep}
+              className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 ${isActive ? 'glass step-active' : 'bg-white/5 hover:bg-white/10'} ${!canGoToStep ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isCompleted ? 'step-completed' : isActive ? 'bg-ucsc-gold/20 border-2 border-ucsc-gold' : 'bg-white/10'}`}>
                 {isCompleted ? <CheckCircle2 className="w-5 h-5 text-ucsc-blue" /> : <Icon className={`w-5 h-5 ${isActive ? 'text-ucsc-gold' : 'text-white/60'}`} />}
               </div>
