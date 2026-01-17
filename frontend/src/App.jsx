@@ -2,7 +2,7 @@ import React, { useState, useEffect} from 'react';
 import { 
   GraduationCap, Upload, CheckCircle2, Circle, User, Mail, Building2, BookOpen,
   ArrowRight, AlertTriangle, ExternalLink, Plus, Trash2, Loader2, CheckCircle,
-  XCircle, AlertCircle, Sparkles, ChevronRight, School
+  XCircle, AlertCircle, Sparkles, ChevronRight, School, Menu, X, Info, HelpCircle, Users,
 } from 'lucide-react';
 
 const MOCK_COLLEGES = [
@@ -86,43 +86,8 @@ function App() {
   const [verificationResults, setVerificationResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [newCourse, setNewCourse] = useState({ courseCode: '', courseName: '', units: 3, grade: 'A', semester: 'Fall 2024' });
-  const { user, isAuthenticated, showSignUp, handleGoogleSignIn, setUser, setShowSignUp, } = useGoogleAuth();
+  const { user, isAuthenticated, showSignUp, handleGoogleSignIn, setUser, setShowSignUp, setIsAuthenticated} = useGoogleAuth();
 
-  
-
-  // Function to update Firestore fields for the current user
-  const updateUserFirestoreField = async (uid, fieldData) => {
-    if (!uid) return;
-    try {
-      const userRef = doc(db, 'userInformation', uid);
-      await updateDoc(userRef, fieldData);
-    } catch (err) {
-      console.error('Error updating user Firestore fields:', err);
-    }
-  };
-
-  // Load Firestore data on mount for logged-in user
-  useEffect(() => {
-    const loadUserFirestoreData = async () => {
-      if (!user.uid) return;
-      try {
-        const userRef = doc(db, 'userInformation', user.uid);
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          setUser(prev => ({
-            ...prev,
-            major: data.major || '',
-            communityCollege: data.communityCollege || ''
-          }));
-        }
-      } catch (err) {
-        console.error('Error loading user Firestore data:', err);
-      }
-    };
-    loadUserFirestoreData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.uid]);
 
   const steps = [
     { id: 1, label: "Choose UC", icon: School, completed: selectedUC !== null },
@@ -155,6 +120,204 @@ function App() {
     setCurrentStep(3);
     setIsLoading(false);
   };
+
+   const renderNavBar = () => (
+    <nav className="glass rounded-2xl mb-6 relative z-60">
+      <div className="px-6 py-4">
+        <div className="flex items-center justify-between">
+          <button onClick={() => setCurrentPage('home')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-ucsc-gold to-yellow-400 flex items-center justify-center shadow-lg">
+              <GraduationCap className="w-6 h-6 text-ucsc-blue" />
+            </div>
+            <span className="font-display font-bold text-white text-lg hidden md:block">UC Transfer Verifier</span>
+          </button>
+
+          <div className="hidden md:flex items-center gap-6">
+            <button onClick={() => setCurrentPage('about')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'about' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
+              <Users className="w-4 h-4" />
+              <span className="font-medium">About Us</span>
+            </button>
+            <button onClick={() => setCurrentPage('faqs')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'faqs' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
+              <HelpCircle className="w-4 h-4" />
+              <span className="font-medium">FAQs</span>
+            </button>
+            <button onClick={() => setCurrentPage('info')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'info' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
+              <Info className="w-4 h-4" />
+              <span className="font-medium">Extra Info</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </nav>
+  );
+
+  const renderAboutUs = () => (
+    <div className="animate-fade-in">
+      <h2 className="font-display text-3xl font-bold text-white mb-6">About Us</h2>
+      <div className="space-y-6">
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-ucsc-gold text-xl font-semibold mb-3">Our Mission</h3>
+          <p className="text-white/70 leading-relaxed">
+            The UC Transfer Path Verifier was created to help community college students navigate the complex transfer process to UC campuses. 
+            We provide a reliable, source-backed second opinion on transfer eligibility using official UC requirements and ASSIST.org data.
+          </p>
+        </div>
+        
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-ucsc-gold text-xl font-semibold mb-3">Built at CruzHacks 2026</h3>
+          <p className="text-white/70 leading-relaxed mb-4">
+            This project was developed during CruzHacks 2026, UC Santa Cruz's premier hackathon. Our team is passionate about 
+            making higher education more accessible and transparent for all students.
+          </p>
+          <div className="flex items-center gap-2 text-white/60">
+            <Sparkles className="w-5 h-5 text-ucsc-gold" />
+            <span>Powered by community collaboration and innovation</span>
+          </div>
+        </div>
+
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-ucsc-gold text-xl font-semibold mb-3">Our Team</h3>
+          <p className="text-white/70 leading-relaxed">
+            We are students who understand the challenges of the transfer process firsthand. Our goal is to empower 
+            fellow students with clear, accurate information to make informed decisions about their academic journey.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFAQs = () => (
+    <div className="animate-fade-in">
+      <h2 className="font-display text-3xl font-bold text-white mb-6">Frequently Asked Questions</h2>
+      <div className="space-y-4">
+        {[
+          {
+            q: "Is this tool official?",
+            a: "No, this is an unofficial verification tool. While we use official sources like ASSIST.org and UC campus websites, you should always confirm with an academic counselor before making decisions."
+          },
+          {
+            q: "How accurate is the eligibility check?",
+            a: "Our tool cross-references your courses with official UC transfer requirements. However, admission is competitive and depends on many factors beyond minimum requirements."
+          },
+          {
+            q: "Which UC campuses are supported?",
+            a: "Currently, only UC Santa Cruz is available in this demo. We plan to expand to all UC campuses in future updates."
+          },
+          {
+            q: "What is IGETC?",
+            a: "IGETC (Intersegmental General Education Transfer Curriculum) is a series of courses that fulfills lower-division general education requirements for transfer to UC and CSU."
+          },
+          {
+            q: "Do I need to complete all major prep courses?",
+            a: "Completing major prep courses significantly strengthens your application. Some majors are more competitive and may require all prep courses for admission."
+          },
+          {
+            q: "What GPA do I need to transfer?",
+            a: "The minimum UC GPA is 2.4, but most admitted students have GPAs well above 3.0. Competitive majors like Computer Science often require GPAs above 3.4."
+          },
+          {
+            q: "Can I save my results?",
+            a: "Yes! Use the 'Save Results' button to print or save a PDF of your verification report for your records."
+          }
+        ].map((faq, idx) => (
+          <div key={idx} className="glass rounded-xl p-6">
+            <h3 className="text-ucsc-gold font-semibold mb-2 flex items-start gap-2">
+              <HelpCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              {faq.q}
+            </h3>
+            <p className="text-white/70 leading-relaxed ml-7">{faq.a}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderExtraInfo = () => (
+    <div className="animate-fade-in">
+      <h2 className="font-display text-3xl font-bold text-white mb-6">Extra Information</h2>
+      <div className="space-y-6">
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-ucsc-gold text-xl font-semibold mb-4">Important Resources</h3>
+          <div className="space-y-3">
+            <a href="https://assist.org" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors group">
+              <ExternalLink className="w-5 h-5 text-ucsc-gold" />
+              <div>
+                <p className="text-white font-medium group-hover:text-ucsc-gold transition-colors">ASSIST.org</p>
+                <p className="text-white/60 text-sm">Official articulation agreements between CA colleges</p>
+              </div>
+            </a>
+            <a href="https://admission.universityofcalifornia.edu/admission-requirements/transfer-requirements/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors group">
+              <ExternalLink className="w-5 h-5 text-ucsc-gold" />
+              <div>
+                <p className="text-white font-medium group-hover:text-ucsc-gold transition-colors">UC Transfer Requirements</p>
+                <p className="text-white/60 text-sm">Official UC transfer admission requirements</p>
+              </div>
+            </a>
+            <a href="https://admissions.ucsc.edu/transfer/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors group">
+              <ExternalLink className="w-5 h-5 text-ucsc-gold" />
+              <div>
+                <p className="text-white font-medium group-hover:text-ucsc-gold transition-colors">UCSC Transfer Info</p>
+                <p className="text-white/60 text-sm">UC Santa Cruz transfer admission information</p>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-ucsc-gold text-xl font-semibold mb-4">Transfer Timeline</h3>
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-24 text-white/60 font-medium">September</div>
+              <div className="text-white/70">UC application opens</div>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-24 text-white/60 font-medium">November 30</div>
+              <div className="text-white/70">UC application deadline</div>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-24 text-white/60 font-medium">January</div>
+              <div className="text-white/70">Update grades and courses in progress</div>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-24 text-white/60 font-medium">March-April</div>
+              <div className="text-white/70">Admission decisions released</div>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-24 text-white/60 font-medium">May-June</div>
+              <div className="text-white/70">Submit Intent to Register, attend orientation</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-ucsc-gold text-xl font-semibold mb-4">Tips for Success</h3>
+          <ul className="space-y-3">
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <span className="text-white/70">Meet with a counselor regularly to stay on track</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <span className="text-white/70">Complete major prep courses with strong grades (C or better)</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <span className="text-white/70">Maintain a competitive GPA (3.0+ for most majors)</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <span className="text-white/70">Get involved in extracurricular activities and leadership</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <span className="text-white/70">Write compelling personal insight questions</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderLeftPanel = () => (
     <div className="flex flex-col h-full">
@@ -448,17 +611,52 @@ function App() {
     }
   };
 
-  return (
+  const renderMainContent = () => {
+  switch (currentPage) {
+    case 'home':
+      return (
+        /* This is your original two-panel container */
+        <div className="flex flex-col lg:flex-row gap-6 h-full min-h-[calc(100vh-12rem)]">
+          <div className="lg:w-80 flex-shrink-0">{renderLeftPanel()}</div>
+          <div className="flex-1 glass rounded-2xl p-6 md:p-8 overflow-y-auto">
+            {renderRightPanel()}
+          </div>
+        </div>
+      );
+    case 'about':
+      return (
+        <div className="glass rounded-2xl p-8 min-h-[calc(100vh-12rem)]">
+          {renderAboutUs()}
+        </div>
+      );
+    case 'faqs':
+      return (
+        <div className="glass rounded-2xl p-8 min-h-[calc(100vh-12rem)]">
+          {renderFAQs()}
+        </div>
+      );
+    case 'info':
+      return (
+        <div className="glass rounded-2xl p-8 min-h-[calc(100vh-12rem)]">
+          {renderExtraInfo()}
+        </div>
+      );
+    default:
+      return null;
+  }
+};
+
+ return (
     <div className="min-h-screen relative overflow-hidden">
       <div className="fixed inset-0 gradient-bg opacity-50" />
       <div className="fixed inset-0 noise-overlay" />
       <div className="wave-container"><div className="wave" /></div>
       <div className="relative z-10 min-h-screen p-4 md:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto h-full">
-          <div className="flex flex-col lg:flex-row gap-6 h-full min-h-[calc(100vh-4rem)]">
-            <div className="lg:w-80 flex-shrink-0">{renderLeftPanel()}</div>
-            <div className="flex-1 glass rounded-2xl p-6 md:p-8 overflow-y-auto">{renderRightPanel()}</div>
+        <div className="max-w-7xl mx-auto h-full space-y-2">
+          <div className="sticky top-0 z-20 w-full py-4">
+              {renderNavBar()}
           </div>
+          {renderMainContent()}
         </div>
       </div>
     </div>
