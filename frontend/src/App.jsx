@@ -10,7 +10,9 @@ const MOCK_COLLEGES = [
   "Ohlone College", "San Jose City College", "Evergreen Valley College",
 ];
 import { useGoogleAuth } from './useGoogleAuth';
-import { updateUserProfile, fetchUserProfile } from './fireData';
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { auth } from './firebase';
+const db = getFirestore();
 
 
 
@@ -87,6 +89,40 @@ function App() {
   const { user, isAuthenticated, showSignUp, handleGoogleSignIn, setUser, setShowSignUp, } = useGoogleAuth();
 
   
+
+  // Function to update Firestore fields for the current user
+  const updateUserFirestoreField = async (uid, fieldData) => {
+    if (!uid) return;
+    try {
+      const userRef = doc(db, 'userInformation', uid);
+      await updateDoc(userRef, fieldData);
+    } catch (err) {
+      console.error('Error updating user Firestore fields:', err);
+    }
+  };
+
+  // Load Firestore data on mount for logged-in user
+  useEffect(() => {
+    const loadUserFirestoreData = async () => {
+      if (!user.uid) return;
+      try {
+        const userRef = doc(db, 'userInformation', user.uid);
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          setUser(prev => ({
+            ...prev,
+            major: data.major || '',
+            communityCollege: data.communityCollege || ''
+          }));
+        }
+      } catch (err) {
+        console.error('Error loading user Firestore data:', err);
+      }
+    };
+    loadUserFirestoreData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.uid]);
 
   const steps = [
     { id: 1, label: "Choose UC", icon: School, completed: selectedUC !== null },
@@ -198,17 +234,40 @@ function App() {
             </div>
           </div>
           <p className="text-white/70 text-sm mb-4">Complete your profile to get started</p>
-          <div><label className="block text-white/70 text-sm mb-2">Full Name</label><input type="text" value={user.name} onChange={(e) => setUser({ ...user, name: e.target.value })} placeholder="Enter your name" className="input-field" required /></div>
-          <div><label className="block text-white/70 text-sm mb-2">Intended Major</label>
-          <select value={user.major} onChange={(e) => {
-            setUser({ ...user, major: e.target.value });
-            updateUserProfile(user.uid, { major: e.target.value });
-          }} className="input-field" required><option value="">Select a major</option>{MOCK_MAJORS.map(m => <option key={m} value={m}>{m}</option>)}</select>
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Full Name</label>
+            <input type="text" value={user.name} onChange={(e) => setUser({ ...user, name: e.target.value })} placeholder="Enter your name" className="input-field" required />
           </div>
-          <div><label className="block text-white/70 text-sm mb-2">Community College</label><select value={user.communityCollege} onChange={(e) => {
-            setUser({ ...user, communityCollege: e.target.value });
-            updateUserProfile(user.uid, { communityCollege: e.target.value });
-          }} className="input-field" required><option value="">Select your college</option>{MOCK_COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Intended Major</label>
+            <select
+              value={user.major}
+              onChange={(e) => {
+                setUser(prev => ({ ...prev, major: e.target.value }));
+                updateUserFirestoreField(user.uid, { major: e.target.value });
+              }}
+              className="input-field"
+              required
+            >
+              <option value="">Select a major</option>
+              {MOCK_MAJORS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Community College</label>
+            <select
+              value={user.communityCollege}
+              onChange={(e) => {
+                setUser(prev => ({ ...prev, communityCollege: e.target.value }));
+                updateUserFirestoreField(user.uid, { communityCollege: e.target.value });
+              }}
+              className="input-field"
+              required
+            >
+              <option value="">Select your college</option>
+              {MOCK_COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
           <button type="submit" className="btn-primary w-full mt-6">Continue<ArrowRight className="w-5 h-5 inline ml-2" /></button>
         </form>
       )}
