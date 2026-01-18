@@ -2,7 +2,23 @@ import React from 'react';
 import { CheckCircle, Circle, BookOpen, TrendingUp, Target, User, Mail, Building2 } from 'lucide-react';
 
 const Dashboard = ({ verificationResults, user }) => {
-  if (!verificationResults) return null;
+  if (!verificationResults) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="glass rounded-2xl p-12 text-center max-w-md">
+          <div className="relative mb-6">
+            <div className="w-32 h-32 mx-auto rounded-2xl bg-white/5 backdrop-blur-xl flex items-center justify-center border border-white/10">
+              <span className="text-6xl">🔒</span>
+            </div>
+          </div>
+          <h3 className="text-white text-xl font-semibold mb-3">Dashboard Locked</h3>
+          <p className="text-white/60 leading-relaxed">
+            Please complete the steps to view your dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  };
 
   const { summary, major_requirements } = verificationResults;
   const totalCourses = major_requirements.completed.length + major_requirements.missing.length;
