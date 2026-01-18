@@ -9,7 +9,7 @@ import {
 import Dashboard from './Dashboard';
 const MOCK_COLLEGES = [
   "De Anza College", "Foothill College", "Mission College", "West Valley College",
-  "Ohlone College", "San Jose City College", "Evergreen Valley College",
+  "Ohlone College", "UCSC (Uc Santa Cruz)"
 ];
 import { useGoogleAuth } from './useGoogleAuth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -17,7 +17,7 @@ import { auth } from './firebase';
 import { addCourseToTranscript, removeCourseFromTranscript } from './fireData';
 const db = getFirestore();
 
-const OPENROUTER_API_KEY = "";
+const OPENROUTER_API_KEY = "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";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 const AI_MODEL = "anthropic/claude-opus-4.5";
@@ -207,17 +207,17 @@ const updateUserFirestoreField = async (uid, fields) => {
   try { await setDoc(doc(db, "userInformation", uid), fields, { merge: true }); } catch (err) { console.error("Firestore error:", err); }
 };
 
-const MOCK_MAJORS = ["Computer Science", "Biology", "Psychology"];
+const MOCK_MAJORS = ["Computer Science", "Biology", "Psychology", "Computer Engineering"];
 const UC_CAMPUSES = [
   { id: "ucsc", name: "UC Santa Cruz", available: true, mascot: "🍌" },
-  { id: "ucb", name: "UC Berkeley", available: false },
-  { id: "ucla", name: "UCLA", available: false },
+  { id: "ucb", name: "UC Berkeley", available: true },
+  { id: "ucla", name: "UCLA", available: true },
   { id: "ucsd", name: "UC San Diego", available: true },
-  { id: "ucd", name: "UC Davis", available: false },
-  { id: "uci", name: "UC Irvine", available: false },
-  { id: "ucr", name: "UC Riverside", available: false },
-  { id: "ucsb", name: "UC Santa Barbara", available: false },
-  { id: "ucm", name: "UC Merced", available: false },
+  { id: "ucd", name: "UC Davis", available: true },
+  { id: "uci", name: "UC Irvine", available: true },
+  { id: "ucr", name: "UC Riverside", available: true },
+  { id: "ucsb", name: "UC Santa Barbara", available: true },
+  { id: "ucm", name: "UC Merced", available: true },
 ];
 
 function App() {
@@ -235,6 +235,8 @@ function App() {
   const fileInputRef = useRef(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef(null);
+  const [verificationStatus, setVerificationStatus] = useState(false);
+  
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -246,6 +248,8 @@ function App() {
           let updates = {};
           if (!user.major && data.major) updates.major = data.major;
           if (!user.communityCollege && data.communityCollege) updates.communityCollege = data.communityCollege;
+          // Set photoURL from Firebase if it exists and not already set
+          if (data.photoURL && !user.photoURL) updates.photoURL = data.photoURL;
           if (Object.keys(updates).length > 0) setUser(prev => ({ ...prev, ...updates }));
           if ((data.major || user.major) && (data.communityCollege || user.communityCollege)) setCurrentStep(1);
           const targetUC = user.targetUC || data.targetUC;
@@ -300,42 +304,138 @@ function App() {
   const runVerification = async () => {
     setIsLoading(true);
     setVerificationError(null);
-    
+
     console.log("========================================");
     console.log("🎯 STARTING VERIFICATION");
     console.log("Using model:", AI_MODEL);
     console.log("========================================");
-    
+
     try {
-      const ucName = selectedUC === 'ucsc' ? 'UC Santa Cruz' : selectedUC === 'ucsd' ? 'UC San Diego' : 'UC Santa Cruz';
+      const ucName = UC_CAMPUSES.find(uc => uc.id === selectedUC)?.name || 'UC Santa Cruz';
       const results = await verifyWithAI(courses, user.major, ucName);
       console.log("✅ Verification successful!", results);
       setVerificationResults(results);
       setCurrentStep(3);
+      // Save verification results to Firebase (full dataVerified object)
+      if (user?.uid) {
+        try {
+          // Build a full "dataVerified" object with everything from results
+          const dataVerified = {
+            summary: results.summary,
+            major_requirements: results.major_requirements,
+            risks: results.risks,
+            igetc_status: results.igetc_status,
+            notes: results.notes,
+            sources: results.sources,
+            eligibility_status: results.eligibility_status,
+            verifiedAt: new Date().toISOString()
+          };
+          // Save to Firebase under the user document
+          await updateUserFirestoreField(user.uid, { dataVerified });
+        } catch (err) {
+          console.error("Error saving full verification results to Firebase:", err);
+        }
+      }
     } catch (error) {
       console.error("❌ VERIFICATION FAILED:", error);
       setVerificationError(error.message);
-      setVerificationResults(generateFallbackResults(courses, user.major, error.message));
+      const fallbackResults = generateFallbackResults(courses, user.major, error.message);
+      setVerificationResults(fallbackResults);
       setCurrentStep(3);
+      // Save fallback results to Firebase (full dataVerified object)
+      if (user?.uid) {
+        try {
+          const dataVerified = {
+            summary: fallbackResults.summary,
+            major_requirements: fallbackResults.major_requirements,
+            risks: fallbackResults.risks,
+            igetc_status: fallbackResults.igetc_status,
+            notes: fallbackResults.notes,
+            sources: fallbackResults.sources,
+            eligibility_status: fallbackResults.eligibility_status,
+            verifiedAt: new Date().toISOString()
+          };
+          await updateUserFirestoreField(user.uid, { dataVerified });
+        } catch (err) {
+          console.error("Error saving full verification results to Firebase:", err);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+  const fetchVerifiedData = async () => {
+    if (!user.uid) return;
+    try {
+      const snap = await getDoc(doc(db, "userInformation", user.uid));
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.dataVerified) {
+          setVerificationResults(data.dataVerified);
+          setVerificationStatus(true); // mark verification complete
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching verified data:", err);
+    }
+  };
+  fetchVerifiedData();
+}, [user.uid]);
 
   const handleTranscriptUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
     setIsParsingTranscript(true);
     setParseError(null);
+
     try {
-      if (file.type !== "text/plain") { setParseError("Please upload a .txt file"); setIsParsingTranscript(false); return; }
+      if (file.type !== "text/plain") {
+        setParseError("Please upload a .txt file");
+        setIsParsingTranscript(false);
+        return;
+      }
+
       const text = await file.text();
-      if (text.length < 20) { setParseError("File too short"); setIsParsingTranscript(false); return; }
-      const parsed = await parseTranscriptWithAI(text);
-      if (parsed?.length > 0) setCourses(prev => [...prev, ...parsed]);
-      else setParseError("No courses found");
-    } catch (err) { setParseError(err.message); }
-    finally { setIsParsingTranscript(false); if (fileInputRef.current) fileInputRef.current.value = ""; }
+      if (text.length < 20) {
+        setParseError("File too short");
+        setIsParsingTranscript(false);
+        return;
+      }
+
+      // AI parses transcript
+      const parsedCourses = await parseTranscriptWithAI(text);
+
+      if (parsedCourses?.length > 0) {
+        // Update local state
+        setCourses(prev => [...prev, ...parsedCourses]);
+
+        // Push all parsed courses to Firebase for the current user
+        if (user?.uid) {
+          try {
+            const formattedCourses = parsedCourses.map(c => ({
+              courseName: c.courseName || "",
+              courseCode: c.courseCode || "",
+              units: parseFloat(c.units) || 3,
+              grade: c.grade || "B",
+              semester: c.semester || "Fall 2024",
+              id: Date.now() + Math.random()
+            }));
+            await updateUserFirestoreField(user.uid, { transcript: [...(courses || []), ...formattedCourses] });
+          } catch (err) {
+            console.error("Error adding AI-parsed courses to Firebase:", err);
+          }
+        }
+      } else {
+        setParseError("No courses found");
+      }
+    } catch (err) {
+      setParseError(err.message);
+    } finally {
+      setIsParsingTranscript(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const handleUCSelect = async (ucId) => {
@@ -365,7 +465,17 @@ function App() {
                 </button>
                 {profileDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl z-50 p-2">
-                    <button onClick={() => { setCurrentStep(0); setShowSignUp(true); setProfileDropdownOpen(false); }} className="flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-ucsc-gold text-ucsc-blue font-semibold hover:bg-yellow-400 mb-1"><User className="w-4 h-4" />Edit Profile</button>
+                    <button
+                      onClick={() => {
+                        setCurrentStep(1); // navigate to step 1
+                        setShowSignUp(true); // display the profile form
+                        setProfileDropdownOpen(false); // close the dropdown
+                        setCurrentPage('home'); // ensure main content switches to home so step 1 shows
+                      }}
+                      className="flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-ucsc-gold text-ucsc-blue font-semibold hover:bg-yellow-400 mb-1"
+                    >
+                      <User className="w-4 h-4" />Edit Profile
+                    </button>
                     <button onClick={async () => { await auth.signOut(); setIsAuthenticated(false); setUser({}); setCurrentStep(0); setSelectedUC(null); setCourses([]); setVerificationResults(null); setCurrentPage('home'); setShowSignUp(false); setProfileDropdownOpen(false); window.location.reload(); }} className="flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600"><LogOut className="w-4 h-4" />Sign Out</button>
                   </div>
                 )}
@@ -419,7 +529,15 @@ function App() {
       <div className="glass rounded-2xl p-6 mb-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-ucsc-gold/20 to-transparent rounded-full blur-2xl" />
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-ucsc-gold to-yellow-400 flex items-center justify-center shadow-lg"><User className="w-7 h-7 text-ucsc-blue" /></div>
+          <div className="w-14 h-14 rounded-full overflow-hidden shadow-lg">
+            {user.photoURL ? (
+              <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-ucsc-gold to-yellow-400 flex items-center justify-center">
+                <User className="w-7 h-7 text-ucsc-blue" />
+              </div>
+            )}
+          </div>
           <div><h3 className="font-display font-bold text-white text-lg">{user.name || 'Your Profile'}</h3><p className="text-white/60 text-sm">Transfer Student</p></div>
         </div>
         <div className="space-y-3">
@@ -479,20 +597,59 @@ function App() {
 
   const renderUCSelection = () => (
     <div className="animate-fade-in">
-      <div className="mb-8"><h2 className="font-display text-3xl font-bold text-white mb-2">Choose Your Target UC</h2><p className="text-white/60">Select the UC campus you want to transfer to.</p></div>
+      
+      <div className="mb-8">
+        <h2 className="font-display text-3xl font-bold text-white mb-2">Choose Your Target UC</h2>
+        <p className="text-white/60">Select the UC campus you want to transfer to.</p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {UC_CAMPUSES.map((uc) => (
           <label key={uc.id} className={`relative cursor-pointer ${!uc.available && 'opacity-50 cursor-not-allowed'}`}>
-            <input type="radio" name="uc-selection" value={uc.id} checked={selectedUC === uc.id} onChange={() => uc.available && handleUCSelect(uc.id)} disabled={!uc.available} className="sr-only" />
-            <div className={`p-5 rounded-xl border-2 transition-all ${selectedUC === uc.id ? 'border-ucsc-gold bg-ucsc-gold/10 shadow-lg shadow-yellow-500/20' : 'border-white/10 bg-white/5 hover:border-white/30'} ${!uc.available && 'pointer-events-none'}`}>
+            <input
+              type="radio"
+              name="uc-selection"
+              value={uc.id}
+              checked={selectedUC === uc.id}
+              onChange={() => uc.available && handleUCSelect(uc.id)}
+              disabled={!uc.available}
+              className="sr-only"
+            />
+            <div
+              className={`p-5 rounded-xl border-2 transition-all ${
+                selectedUC === uc.id
+                  ? 'border-ucsc-gold bg-ucsc-gold/10 shadow-lg shadow-yellow-500/20'
+                  : 'border-white/10 bg-white/5 hover:border-white/30'
+              } ${!uc.available && 'pointer-events-none'}`}
+            >
               <div className="flex items-center gap-3">
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedUC === uc.id ? 'border-ucsc-gold bg-ucsc-gold' : 'border-white/40'}`}>{selectedUC === uc.id && <div className="w-2 h-2 rounded-full bg-ucsc-blue" />}</div>
-                <div className="flex-1"><p className="text-white font-medium">{uc.name}</p>{!uc.available && <p className="text-white/40 text-xs">Coming soon</p>}</div>
+                <div
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    selectedUC === uc.id ? 'border-ucsc-gold bg-ucsc-gold' : 'border-white/40'
+                  }`}
+                >
+                  {selectedUC === uc.id && <div className="w-2 h-2 rounded-full bg-ucsc-blue" />}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-medium">{uc.name}</p>
+                  {!uc.available && <p className="text-white/40 text-xs">Coming soon</p>}
+                </div>
                 {uc.mascot && <span className="text-2xl">{uc.mascot}</span>}
               </div>
             </div>
           </label>
         ))}
+      </div>
+      {/* Bottom Back + Continue buttons */}
+      <div className="flex gap-4 mt-6">
+        <button onClick={() => setCurrentStep(0)} className="btn-secondary">Back</button>
+        <button
+          onClick={() => selectedUC && setCurrentStep(2)}
+          disabled={!selectedUC}
+          className={`btn-primary ${!selectedUC ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          Continue
+          <ArrowRight className="w-5 h-5 inline ml-2" />
+        </button>
       </div>
     </div>
   );
