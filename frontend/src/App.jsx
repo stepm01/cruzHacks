@@ -231,16 +231,12 @@ function App() {
   const [newCourse, setNewCourse] = useState({ courseCode: '', courseName: '', units: 3, grade: 'A', semester: 'Fall 2024' });
   const { user, isAuthenticated, showSignUp, handleGoogleSignIn, setUser, setShowSignUp, setIsAuthenticated } = useGoogleAuth();
   const [currentPage, setCurrentPage] = useState('home');
-<<<<<<< HEAD
-  const [previousStep, setPreviousStep] = useState(null);
-=======
   const [isParsingTranscript, setIsParsingTranscript] = useState(false);
   const [parseError, setParseError] = useState(null);
   const [verificationError, setVerificationError] = useState(null);
   const fileInputRef = useRef(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef(null);
->>>>>>> e13e8a7 (AI improvement)
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -286,19 +282,7 @@ function App() {
     { id: 3, label: "Results", icon: CheckCircle2, completed: verificationResults !== null },
   ];
 
-<<<<<<< HEAD
-  const handleProfileSubmit = (e) => {
-  e.preventDefault();
-  if (user.name && user.major && user.communityCollege) {
-    setShowSignUp(false);
-    setCurrentStep(previousStep || 1); // return to previous step or step 1
-  }
-};
-
-  const confirmUCSelection = () => { if (selectedUC) setCurrentStep(2); };
-=======
   const handleProfileSubmit = (e) => { e.preventDefault(); if (user.name && user.major && user.communityCollege) setCurrentStep(1); };
->>>>>>> e13e8a7 (AI improvement)
 
   const addCourse = async () => {
     if (newCourse.courseCode && newCourse.courseName) {
@@ -371,33 +355,10 @@ function App() {
             <span className="font-display font-bold text-white text-lg hidden md:block">TransferMap</span>
           </button>
           <div className="hidden md:flex items-center gap-6">
-<<<<<<< HEAD
-    
-            <button onClick={() => setCurrentPage('about')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'about' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
-              <Users className="w-4 h-4" />
-              <span className="font-medium">About Us</span>
-            </button>
-            <button onClick={() => setCurrentPage('faqs')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'faqs' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
-              <HelpCircle className="w-4 h-4" />
-              <span className="font-medium">FAQs</span>
-            </button>
-            <button onClick={() => setCurrentPage('info')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'info' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
-              <Info className="w-4 h-4" />
-              <span className="font-medium">Resources</span>
-            </button>
-            {verificationResults && (
-  <button onClick={() => setCurrentPage('dashboard')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'dashboard' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
-    <Info className="w-4 h-4" />
-    <span className="font-medium">Dashboard</span>
-  </button>
-)}
-            {/* Profile Dropdown */}
-=======
             <button onClick={() => setCurrentPage('about')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'about' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}><Users className="w-4 h-4" /><span>About</span></button>
             <button onClick={() => setCurrentPage('faqs')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'faqs' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}><HelpCircle className="w-4 h-4" /><span>FAQs</span></button>
             <button onClick={() => setCurrentPage('info')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'info' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}><Info className="w-4 h-4" /><span>Resources</span></button>
             <button onClick={() => setCurrentPage('dashboard')} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'dashboard' ? 'bg-ucsc-gold/20 text-ucsc-gold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}><Info className="w-4 h-4" /><span>Dashboard</span></button>
->>>>>>> e13e8a7 (AI improvement)
             {isAuthenticated && (
               <div className="relative" ref={profileDropdownRef}>
                 <button onClick={() => setProfileDropdownOpen(v => !v)} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold">
@@ -405,58 +366,9 @@ function App() {
                   <svg className={`w-4 h-4 transition-transform ${profileDropdownOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
                 {profileDropdownOpen && (
-<<<<<<< HEAD
-                  <div
-                    className="absolute right-0 mt-2 w-56 bg-gradient-to-br from-yellow-50 via-white to-yellow-100 rounded-2xl shadow-2xl ring-1 ring-black/10 z-50 animate-fade-in-fast"
-                    style={{ minWidth: '14rem', boxShadow: '0 8px 32px 0 rgba(255,200,0,0.16), 0 1.5px 8px 0 rgba(0,0,0,0.08)' }}
-                  >
-                    <div className="p-1.5">
-                      <div className="rounded-2xl bg-gradient-to-br from-ucsc-gold/80 via-yellow-100/90 to-white/90 shadow-lg">
-                        <button
-                          onClick={() => {
-                          setPreviousStep(currentStep);   // save current step
-                          setCurrentStep(0);              // go to profile editing step
-                          setShowSignUp(true);
-                          setProfileDropdownOpen(false);
-                          setCurrentPage('home');          // make sure profile page is shown
-                        }}
-                          className="flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-gradient-to-br from-ucsc-gold/90 to-yellow-400/90 text-ucsc-blue font-semibold hover:from-yellow-400 hover:to-ucsc-gold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ucsc-gold/40 mb-1"
-                          style={{ willChange: 'transform', borderRadius: '1rem' }}
-                        >
-                          <User className="w-4 h-4" />
-                          Edit Profile
-                        </button>
-                        <button
-                          onClick={async () => {
-                            try {
-                              await auth.signOut();
-                              setIsAuthenticated(false);
-                              setUser({});
-                              setCurrentStep(0);
-                              setSelectedUC(null);
-                              setCourses([]);
-                              setVerificationResults(null);
-                              setCurrentPage('home');
-                              setShowSignUp(false);
-                            } catch (err) {
-                              console.error("Sign out failed:", err);
-                            }
-                            setProfileDropdownOpen(false);
-                            window.location.reload();
-                          }}
-                          className="flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-gradient-to-br from-red-500/90 to-red-700/90 text-white font-semibold hover:from-red-600 hover:to-rose-600 hover:scale-[1.02] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300/40"
-                          style={{ willChange: 'transform', borderRadius: '1rem' }}
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Sign Out
-                        </button>
-                      </div>
-                    </div>
-=======
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl z-50 p-2">
                     <button onClick={() => { setCurrentStep(0); setShowSignUp(true); setProfileDropdownOpen(false); }} className="flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-ucsc-gold text-ucsc-blue font-semibold hover:bg-yellow-400 mb-1"><User className="w-4 h-4" />Edit Profile</button>
                     <button onClick={async () => { await auth.signOut(); setIsAuthenticated(false); setUser({}); setCurrentStep(0); setSelectedUC(null); setCourses([]); setVerificationResults(null); setCurrentPage('home'); setShowSignUp(false); setProfileDropdownOpen(false); window.location.reload(); }} className="flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600"><LogOut className="w-4 h-4" />Sign Out</button>
->>>>>>> e13e8a7 (AI improvement)
                   </div>
                 )}
               </div>
@@ -523,18 +435,8 @@ function App() {
           const Icon = step.icon;
           const isActive = currentStep === idx + 1;
           const isCompleted = step.completed;
-<<<<<<< HEAD
-
-          // 🔒 Disable future steps
-          const isFutureStep = stepNumber > currentStep;
-
-        
-          const isDisabled = !isAuthenticated || stepNumber === 3 && (currentStep === 1 || currentStep === 2 || showSignUp);
-          const canGoToStep = !isDisabled;
-=======
           const isDisabled = !isAuthenticated || (idx > 0 && !steps[idx - 1].completed);
           const canGoToStep = isAuthenticated && (!isDisabled || idx < currentStep - 1);
->>>>>>> e13e8a7 (AI improvement)
           return (
             <button key={step.id} onClick={() => canGoToStep && setCurrentStep(idx + 1)} disabled={!canGoToStep} className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all ${isActive ? 'glass step-active' : 'bg-white/5 hover:bg-white/10'} ${!canGoToStep ? 'opacity-50 cursor-not-allowed' : ''}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isCompleted ? 'step-completed' : isActive ? 'bg-ucsc-gold/20 border-2 border-ucsc-gold' : 'bg-white/10'}`}>
@@ -772,3 +674,4 @@ function App() {
 }
 
 export default App;
+
