@@ -517,11 +517,20 @@ function App() {
       <div className="space-y-3">
         {steps.map((step, idx) => {
           const Icon = step.icon;
-          const isActive = currentStep === idx + 1;
+          const stepNumber = idx + 1;
+          const isActive = currentStep === stepNumber;
           const isCompleted = step.completed;
-          const isDisabled = !isAuthenticated || (idx > 0 && !steps[idx - 1].completed);
-          // Allow clicking previous steps freely, but not future steps
-          const canGoToStep = isAuthenticated && (!isDisabled || idx < currentStep - 1);
+
+          // 🔒 Disable future steps
+          const isFutureStep = stepNumber > currentStep;
+
+          // 🚫 Explicitly grey out Step 3 when on Step 2
+          const isDisabled =
+          !isAuthenticated ||
+          isFutureStep ||
+          (stepNumber === 3 && currentStep === 2);
+
+          const canGoToStep = !isDisabled;
           return (
             <button
               key={step.id}
