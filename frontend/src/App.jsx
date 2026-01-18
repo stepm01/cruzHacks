@@ -9,7 +9,7 @@ import {
 import Dashboard from './Dashboard';
 const MOCK_COLLEGES = [
   "De Anza College", "Foothill College", "Mission College", "West Valley College",
-  "Ohlone College", "UCSC (Uc Santa Cruz)"
+  "Ohlone College", "Las Positas College", "UCSC (Uc Santa Cruz)", "UCI (Uc Irvine)", "UCSD (Uc San Diego)", "UCB (Uc Berkeley)", "UCLA (Uc Los Angeles)", "UCD (Uc Davis)", "UCR (Uc Riverside)", "UCSB (Uc Santa Barbara)", "UCM (Uc Merced)"
 ];
 import { useGoogleAuth } from './useGoogleAuth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -207,9 +207,9 @@ const updateUserFirestoreField = async (uid, fields) => {
   try { await setDoc(doc(db, "userInformation", uid), fields, { merge: true }); } catch (err) { console.error("Firestore error:", err); }
 };
 
-const MOCK_MAJORS = ["Computer Science", "Biology", "Psychology", "Computer Engineering"];
+const MOCK_MAJORS = ["Computer Science", "Biology", "Psychology", "Computer Engineering", "Economics", "Electrical Engineering", "Philosophy", "Sociology", "Business Administration", "Mathematics"];
 const UC_CAMPUSES = [
-  { id: "ucsc", name: "UC Santa Cruz", available: true, mascot: "🍌" },
+  { id: "ucsc", name: "UC Santa Cruz", available: true,},
   { id: "ucb", name: "UC Berkeley", available: true },
   { id: "ucla", name: "UCLA", available: true },
   { id: "ucsd", name: "UC San Diego", available: true },
@@ -467,7 +467,7 @@ function App() {
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl z-50 p-2">
                     <button
                       onClick={() => {
-                        setCurrentStep(1); // navigate to step 1
+                        setCurrentStep(0); // navigate to step 1
                         setShowSignUp(true); // display the profile form
                         setProfileDropdownOpen(false); // close the dropdown
                         setCurrentPage('home'); // ensure main content switches to home so step 1 shows

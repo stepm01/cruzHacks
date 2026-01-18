@@ -115,7 +115,7 @@ const Dashboard = ({ verificationResults, user }) => {
 
         {/* 4. Pie Chart */}
         <div className="glass rounded-2xl p-6 flex flex-col">
-          <h4 className="text-white font-medium mb-3 text-center text-sm">Transfer Readiness</h4>
+          <h4 className="text-white font-medium mb-3 text-center text-sm">Transfer Readiness (Percentage of Major Prep Courses Done) </h4>
           
           <div className="flex-1 flex items-center justify-center">
             <div className="relative">
