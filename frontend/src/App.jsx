@@ -17,7 +17,7 @@ import { auth } from './firebase';
 import { addCourseToTranscript, removeCourseFromTranscript } from './fireData';
 const db = getFirestore();
 
-const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = "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";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 const AI_MODEL = "anthropic/claude-opus-4.5";
