@@ -13,6 +13,7 @@ const MOCK_COLLEGES = [
 import { useGoogleAuth } from './useGoogleAuth';
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth } from './firebase';
+import { addCourseToTranscript, removeCourseFromTranscript } from './fireData';
 const db = getFirestore();
 
 // Firestore update function for user fields (safe update or create)
@@ -154,14 +155,51 @@ function App() {
 
   const confirmUCSelection = () => { if (selectedUC) setCurrentStep(2); };
 
-  const addCourse = () => {
+  const addCourse = async () => {
     if (newCourse.courseCode && newCourse.courseName) {
-      setCourses([...courses, { ...newCourse, id: Date.now() }]);
+      const courseWithId = { ...newCourse, id: Date.now() };
+      setCourses(prev => [...prev, courseWithId]);
       setNewCourse({ courseCode: '', courseName: '', units: 3, grade: 'A', semester: 'Fall 2024' });
+      if (user && user.uid) {
+        try {
+          await addCourseToTranscript(user.uid, courseWithId);
+        } catch (err) {
+          // Optionally handle error (optimistic update)
+          console.error('Failed to add course to Firestore transcript:', err);
+        }
+      }
     }
   };
 
-  const removeCourse = (id) => setCourses(courses.filter(c => c.id !== id));
+  const removeCourse = async (id) => {
+    setCourses(prev => prev.filter(c => c.id !== id));
+    if (user && user.uid) {
+      try {
+        await removeCourseFromTranscript(user.uid, id);
+      } catch (err) {
+        // Optionally handle error (optimistic update)
+        console.error('Failed to remove course from Firestore transcript:', err);
+      }
+    }
+  };
+
+  useEffect(() => {
+  const fetchTranscript = async () => {
+    if (!user.uid) return;
+    try {
+      const transcriptRef = doc(db, "userInformation", user.uid);
+      const transcriptSnap = await getDoc(transcriptRef);
+      if (transcriptSnap.exists()) {
+        const data = transcriptSnap.data();
+        if (data.transcript) setCourses(data.transcript);
+      }
+    } catch (err) {
+      console.error("Failed to fetch transcript:", err);
+    }
+  };
+
+  fetchTranscript();
+}, [user.uid]);
 
   const runVerification = async () => {
     setIsLoading(true);

@@ -1,5 +1,5 @@
 // fireData.js
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 const db = getFirestore();
 
@@ -43,4 +43,57 @@ export const fetchUserProfile = async (uid) => {
   }
 
   return null;
+};
+
+export const addCourseToTranscript = async (uid, course) => {
+  if (!uid || !course) {
+    console.error('[fireData] Missing uid or course');
+    return;
+  }
+
+  try {
+    const ref = doc(db, 'userInformation', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      // Create document with transcript array containing the course
+      await setDoc(ref, { transcript: [course] }, { merge: true });
+    } else {
+      const data = snap.data();
+      const transcript = Array.isArray(data.transcript) ? data.transcript : [];
+      // Check if course with same id already exists, if not add
+      if (!transcript.some(c => c.id === course.id)) {
+        await updateDoc(ref, {
+          transcript: arrayUnion(course)
+        });
+      }
+    }
+    console.log('[fireData] Course added to transcript:', course);
+  } catch (err) {
+    console.error('[fireData] Add course failed:', err);
+  }
+};
+
+export const removeCourseFromTranscript = async (uid, courseId) => {
+  if (!uid || !courseId) {
+    console.error('[fireData] Missing uid or courseId');
+    return;
+  }
+
+  try {
+    const ref = doc(db, 'userInformation', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+    const transcript = Array.isArray(data.transcript) ? data.transcript : [];
+    const courseToRemove = transcript.find(c => c.id === courseId);
+    if (courseToRemove) {
+      await updateDoc(ref, {
+        transcript: arrayRemove(courseToRemove)
+      });
+      console.log('[fireData] Course removed from transcript:', courseId);
+    }
+  } catch (err) {
+    console.error('[fireData] Remove course failed:', err);
+  }
 };
