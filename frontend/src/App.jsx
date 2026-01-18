@@ -103,6 +103,7 @@ function App() {
   const [newCourse, setNewCourse] = useState({ courseCode: '', courseName: '', units: 3, grade: 'A', semester: 'Fall 2024' });
   const { user, isAuthenticated, showSignUp, handleGoogleSignIn, setUser, setShowSignUp, setIsAuthenticated} = useGoogleAuth();
   const [currentPage, setCurrentPage] = useState('home');
+  const [previousStep, setPreviousStep] = useState(null);
 
   // Fetch user data from Firestore on mount and prefill profile fields
   useEffect(() => {
@@ -148,11 +149,12 @@ function App() {
   ];
 
   const handleProfileSubmit = (e) => {
-    e.preventDefault();
-    if (user.name && user.major && user.communityCollege) {
-      setCurrentStep(1);
-    }
-  };
+  e.preventDefault();
+  if (user.name && user.major && user.communityCollege) {
+    setShowSignUp(false);
+    setCurrentStep(previousStep || 1); // return to previous step or step 1
+  }
+};
 
   const confirmUCSelection = () => { if (selectedUC) setCurrentStep(2); };
 
@@ -281,10 +283,12 @@ function App() {
                       <div className="rounded-2xl bg-gradient-to-br from-ucsc-gold/80 via-yellow-100/90 to-white/90 shadow-lg">
                         <button
                           onClick={() => {
-                            setCurrentStep(0);
-                            setShowSignUp(true);
-                            setProfileDropdownOpen(false);
-                          }}
+                          setPreviousStep(currentStep);   // save current step
+                          setCurrentStep(0);              // go to profile editing step
+                          setShowSignUp(true);
+                          setProfileDropdownOpen(false);
+                          setCurrentPage('home');          // make sure profile page is shown
+                        }}
                           className="flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-gradient-to-br from-ucsc-gold/90 to-yellow-400/90 text-ucsc-blue font-semibold hover:from-yellow-400 hover:to-ucsc-gold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ucsc-gold/40 mb-1"
                           style={{ willChange: 'transform', borderRadius: '1rem' }}
                         >

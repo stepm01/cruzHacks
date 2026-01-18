@@ -524,7 +524,6 @@ async def verify_transfer_eligibility(email: str):
 
     # Store results in Firestore
     user_ref.update({"verification_results": result})
-
     return result
 
 
