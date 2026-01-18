@@ -10,6 +10,17 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import json
 
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Initialize Firebase Admin if not already done
+if not firebase_admin._apps:
+    firebase_admin.initialize_app()
+
+db = firestore.client()
+
+
+
 app = FastAPI(
     title="UC Transfer Path Verifier",
     description="Verify your UC transfer eligibility using official sources",
@@ -25,8 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory storage for demo (replace with Firebase/PostgreSQL in production)
-users_db: Dict[str, dict] = {}
+# In-memory sessions (for demo, not used for persistent user data)
 sessions_db: Dict[str, str] = {}
 
 
@@ -204,10 +214,11 @@ async def root():
 @app.post("/api/auth/register")
 async def register_user(user: UserCreate):
     """Register a new user after Google OAuth"""
-    if user.email in users_db:
+    user_ref = db.collection("users").document(user.email)
+    doc = user_ref.get()
+    if doc.exists:
         raise HTTPException(status_code=400, detail="User already exists")
-    
-    users_db[user.email] = {
+    user_data = {
         "email": user.email,
         "name": user.name,
         "major": user.major,
@@ -215,32 +226,39 @@ async def register_user(user: UserCreate):
         "created_at": datetime.now().isoformat(),
         "transcript": [],
         "target_uc": None,
+        "target_major": user.major,
         "verification_results": None
     }
-    
-    return {"success": True, "user": users_db[user.email]}
+    user_ref.set(user_data)
+    return {"success": True, "user": user_data}
 
 
 @app.get("/api/auth/user/{email}")
 async def get_user(email: str):
     """Get user profile by email"""
-    if email not in users_db:
+    user_ref = db.collection("users").document(email)
+    doc = user_ref.get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="User not found")
-    return users_db[email]
+    return doc.to_dict()
 
 
 @app.put("/api/auth/user/{email}")
 async def update_user(email: str, user: UserCreate):
     """Update user profile"""
-    if email not in users_db:
+    user_ref = db.collection("users").document(email)
+    doc = user_ref.get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    users_db[email].update({
+    update_data = {
         "name": user.name,
         "major": user.major,
         "community_college": user.community_college,
-    })
-    return users_db[email]
+    }
+    user_ref.update(update_data)
+    # Return updated user
+    updated_doc = user_ref.get()
+    return updated_doc.to_dict()
 
 
 @app.get("/api/colleges")
@@ -288,38 +306,41 @@ async def get_uc_campuses():
 @app.post("/api/select-uc")
 async def select_target_uc(selection: UCSelection):
     """Select target UC campus"""
-    if selection.user_email not in users_db:
+    user_ref = db.collection("users").document(selection.user_email)
+    doc = user_ref.get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="User not found")
-    
     if selection.target_uc.lower() != "ucsc":
         raise HTTPException(status_code=400, detail="Only UCSC is available in demo")
-    
-    users_db[selection.user_email]["target_uc"] = selection.target_uc
-    users_db[selection.user_email]["target_major"] = selection.target_major
-    
+    user_ref.update({
+        "target_uc": selection.target_uc,
+        "target_major": selection.target_major
+    })
     return {"success": True, "target_uc": selection.target_uc}
 
 
 @app.post("/api/transcript/upload")
 async def upload_transcript(transcript: TranscriptUpload):
     """Upload/enter transcript courses"""
-    if transcript.user_email not in users_db:
+    user_ref = db.collection("users").document(transcript.user_email)
+    doc = user_ref.get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    users_db[transcript.user_email]["transcript"] = [
-        course.dict() for course in transcript.courses
-    ]
-    
+    user_ref.update({
+        "transcript": [course.dict() for course in transcript.courses]
+    })
     return {"success": True, "courses_count": len(transcript.courses)}
 
 
 @app.get("/api/transcript/{email}")
 async def get_transcript(email: str):
     """Get user's transcript"""
-    if email not in users_db:
+    user_ref = db.collection("users").document(email)
+    doc = user_ref.get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    return {"courses": users_db[email].get("transcript", [])}
+    user_data = doc.to_dict()
+    return {"courses": user_data.get("transcript", [])}
 
 
 @app.post("/api/verify/{email}")
@@ -328,36 +349,37 @@ async def verify_transfer_eligibility(email: str):
     Main verification endpoint - checks transcript against requirements
     Uses mock Assist.org data and UCSC requirements
     """
-    if email not in users_db:
+    user_ref = db.collection("users").document(email)
+    doc = user_ref.get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    user = users_db[email]
-    
+    user = doc.to_dict()
+
     if not user.get("target_uc"):
         raise HTTPException(status_code=400, detail="Please select a target UC first")
-    
+
     if not user.get("transcript"):
         raise HTTPException(status_code=400, detail="Please upload your transcript first")
-    
+
     major = user.get("target_major", user.get("major", "Computer Science"))
     if major not in UCSC_REQUIREMENTS:
         raise HTTPException(status_code=400, detail=f"Major '{major}' not supported in demo")
-    
+
     requirements = UCSC_REQUIREMENTS[major]
     college = user["community_college"]
     transcript = user["transcript"]
-    
+
     # Get course equivalencies for the college
     equivalencies = ASSIST_EQUIVALENCIES.get(college, {})
-    
+
     # Analyze completed courses
     completed_codes = [c["course_code"].upper() for c in transcript]
     total_units = sum(c["units"] for c in transcript)
-    
+
     # Calculate GPA
-    grade_points = {"A": 4.0, "A-": 3.7, "B+": 3.3, "B": 3.0, "B-": 2.7, 
+    grade_points = {"A": 4.0, "A-": 3.7, "B+": 3.3, "B": 3.0, "B-": 2.7,
                    "C+": 2.3, "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "F": 0.0}
-    
+
     total_grade_points = 0
     graded_units = 0
     for course in transcript:
@@ -365,47 +387,47 @@ async def verify_transfer_eligibility(email: str):
         if grade in grade_points:
             total_grade_points += grade_points[grade] * course["units"]
             graded_units += course["units"]
-    
+
     gpa = total_grade_points / graded_units if graded_units > 0 else 0.0
-    
+
     # Check major requirements
     major_requirements_status = []
     for req in requirements["required_courses"]:
         completed = False
         matched_course = None
-        
+
         for code in req["equivalent_codes"]:
             if code.upper() in completed_codes:
                 completed = True
                 matched_course = code
                 break
-        
+
         major_requirements_status.append({
             "requirement": req["name"],
             "completed": completed,
             "matched_course": matched_course,
             "acceptable_courses": req["equivalent_codes"],
         })
-    
+
     # Check IGETC areas
     igetc_status = {}
     completed_igetc = set()
-    
+
     for code in completed_codes:
         if code in equivalencies:
             for area in equivalencies[code].get("igetc", []):
                 completed_igetc.add(area)
-    
+
     for area, info in requirements["igetc_areas"].items():
         igetc_status[area] = {
             "name": info["name"],
             "completed": area in completed_igetc,
             "required": info["required"],
         }
-    
+
     # Identify risks and warnings
     risks = []
-    
+
     if gpa < requirements["min_gpa"]:
         risks.append({
             "type": "GPA",
@@ -416,11 +438,11 @@ async def verify_transfer_eligibility(email: str):
     elif gpa < requirements["min_gpa"] + 0.3:
         risks.append({
             "type": "GPA",
-            "severity": "medium", 
+            "severity": "medium",
             "message": f"Your GPA ({gpa:.2f}) is close to the minimum. A higher GPA improves your chances.",
             "source": requirements["source_url"]
         })
-    
+
     if total_units < requirements["min_units"]:
         risks.append({
             "type": "Units",
@@ -428,7 +450,7 @@ async def verify_transfer_eligibility(email: str):
             "message": f"You have {total_units} units but need at least {requirements['min_units']} to transfer",
             "source": requirements["source_url"]
         })
-    
+
     if total_units > requirements["max_units"]:
         risks.append({
             "type": "Units",
@@ -436,7 +458,7 @@ async def verify_transfer_eligibility(email: str):
             "message": f"You have {total_units} units which exceeds the {requirements['max_units']} unit cap. Some units may not transfer.",
             "source": requirements["source_url"]
         })
-    
+
     # Missing major prep courses
     missing_major_prep = [r for r in major_requirements_status if not r["completed"]]
     if missing_major_prep:
@@ -446,9 +468,9 @@ async def verify_transfer_eligibility(email: str):
             "message": f"You are missing {len(missing_major_prep)} required major preparation course(s)",
             "source": "https://assist.org"
         })
-    
+
     # Missing IGETC areas
-    missing_igetc = [area for area, info in igetc_status.items() 
+    missing_igetc = [area for area, info in igetc_status.items()
                     if info["required"] and not info["completed"]]
     if missing_igetc:
         risks.append({
@@ -457,12 +479,12 @@ async def verify_transfer_eligibility(email: str):
             "message": f"IGETC areas not yet satisfied: {', '.join(missing_igetc)}",
             "source": "https://assist.org/transfer/institution/113/115"
         })
-    
+
     # Overall eligibility determination
     major_prep_complete = len(missing_major_prep) == 0
     units_ok = requirements["min_units"] <= total_units <= requirements["max_units"]
     gpa_ok = gpa >= requirements["min_gpa"]
-    
+
     if major_prep_complete and units_ok and gpa_ok:
         eligibility_status = "likely_eligible"
         eligibility_message = "Based on official requirements, you appear to meet the basic transfer eligibility criteria."
@@ -472,7 +494,7 @@ async def verify_transfer_eligibility(email: str):
     else:
         eligibility_status = "not_yet_eligible"
         eligibility_message = "You do not yet meet the transfer requirements. See the issues below."
-    
+
     # Build the result
     result = {
         "eligibility_status": eligibility_status,
@@ -499,23 +521,24 @@ async def verify_transfer_eligibility(email: str):
         },
         "disclaimer": "This is a verification tool using official sources. It is NOT official advice. Always confirm with an academic counselor before making decisions."
     }
-    
-    # Store results
-    users_db[email]["verification_results"] = result
-    
+
+    # Store results in Firestore
+    user_ref.update({"verification_results": result})
+
     return result
 
 
 @app.get("/api/results/{email}")
 async def get_verification_results(email: str):
     """Get stored verification results"""
-    if email not in users_db:
+    user_ref = db.collection("users").document(email)
+    doc = user_ref.get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    results = users_db[email].get("verification_results")
+    user = doc.to_dict()
+    results = user.get("verification_results")
     if not results:
         raise HTTPException(status_code=404, detail="No verification results found. Run verification first.")
-    
     return results
 
 
