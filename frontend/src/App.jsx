@@ -17,7 +17,7 @@ import { auth } from './firebase';
 import { addCourseToTranscript, removeCourseFromTranscript } from './fireData';
 const db = getFirestore();
 
-const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = "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";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 const AI_MODEL = "anthropic/claude-opus-4.5";
@@ -207,7 +207,7 @@ const updateUserFirestoreField = async (uid, fields) => {
   try { await setDoc(doc(db, "userInformation", uid), fields, { merge: true }); } catch (err) { console.error("Firestore error:", err); }
 };
 
-const MOCK_MAJORS = ["Computer Science", "Biology", "Psychology", "Computer Engineering", "Economics", "Electrical Engineering", "Philosophy", "Sociology", "Business Administration", "Mathematics"];
+const MOCK_MAJORS = ["Computer Science", "Biology", "Psychology", "Computer Engineering", "Economics", "Electrical Engineering", "Philosophy", "Sociology", "Business Administration", "Mathematics", "EECS", "Physics", "Aerospace Engineering", "Environmental Science", "Anthropology", "Political Science", "History", "Chemistry", "Mechanical Engineering"];
 const UC_CAMPUSES = [
   { id: "ucsc", name: "UC Santa Cruz", available: true,},
   { id: "ucb", name: "UC Berkeley", available: true },
