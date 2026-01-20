@@ -2,7 +2,6 @@
 
 > A hackathon project for CruzHacks 2026 - Helping California community college students verify their UC transfer eligibility using official sources.
 
-![UC Transfer Verifier](https://img.shields.io/badge/cruzhacks-2025-FDC700?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18.2-61DAFB?style=flat-square&logo=react)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.128-009688?style=flat-square&logo=fastapi)
 ![Tailwind](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat-square&logo=tailwindcss)
